@@ -1,0 +1,227 @@
+<!doctype html><html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+body{margin:0;font-family:system-ui,sans-serif;background:#0b1220;color:#e2e8f0;padding-bottom:76px}
+header{display:flex;align-items:center;gap:10px;padding:14px 16px;position:sticky;top:0;background:#0b1220;z-index:5;border-bottom:1px solid #1e293b}
+.logo{font-size:30px}header b{font-size:17px}.sm{font-size:12px;color:#94a3b8}
+.chip{margin-left:auto;font-size:12px;padding:5px 10px;border-radius:99px;background:#1e293b}
+.ok{color:#4ade80}.bad{color:#f87171}.mut{color:#64748b}
+main{padding:12px 14px}
+.card{background:#162033;border-radius:14px;padding:14px;margin-bottom:10px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.grid .card{margin:0}
+.big{font-size:24px;font-weight:700}.huge{font-size:46px;font-weight:800;line-height:1.1}
+.huge small{font-size:18px;color:#94a3b8;font-weight:600}
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.tag{padding:5px 10px;border-radius:99px;background:#1e293b;font-size:13px}.tag.on{background:#14532d;color:#bbf7d0}
+button{background:#273449;color:#e2e8f0;border:0;border-radius:10px;padding:11px 14px;font-size:14px}
+button.pri{background:#0284c7}button.red{background:#b91c1c}button.sel{background:#0284c7}
+button.big2{flex:1;padding:14px;font-size:16px}
+canvas{width:100%;height:150px;display:block;margin-top:8px}
+nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:#0f172a;border-top:1px solid #1e293b;z-index:6}
+nav button{flex:1;background:none;border-radius:0;padding:10px 0 12px;font-size:11px;color:#94a3b8}
+nav button span{display:block;font-size:20px}nav button.act{color:#38bdf8}
+table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:7px 4px;text-align:right;border-bottom:1px solid #1e293b}
+td:first-child,th:first-child{text-align:left}th{color:#94a3b8;font-weight:500}
+label{display:block;font-size:12px;color:#94a3b8;margin-top:10px}
+input,select{width:100%;padding:11px;border-radius:9px;border:1px solid #334155;background:#0b1220;color:#e2e8f0;font-size:15px}
+.seg{display:flex;gap:6px;margin-bottom:10px;overflow-x:auto}.seg button{white-space:nowrap}
+#modal{position:fixed;inset:0;background:#000a;display:flex;align-items:center;justify-content:center;z-index:20}
+#modal div{background:#162033;padding:20px;border-radius:14px;width:80%}
+#toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#334155;padding:10px 16px;border-radius:99px;z-index:30;font-size:13px}
+.err{color:#f87171;font-size:12px;margin-top:6px;word-break:break-word}
+</style></head><body>
+<header><div class="logo">🥭</div><div><b>Mango Monitor</b><div class="sm">MG-080PRO • Mango Energy</div></div><span class="chip" id="chip">…</span></header>
+<main>
+
+<section id="p0">
+ <div class="card"><div class="sm">Hozirgi quvvat (taxminiy)</div>
+  <div class="huge"><span id="w">-</span><small> Vt</small></div>
+  <div class="sm" id="amps"></div><div class="err" id="err"></div></div>
+ <div class="grid">
+  <div class="card"><div class="sm">Suv harorati</div><div class="big" id="t">-</div><div class="sm">belgilangan <span id="ts">-</span></div></div>
+  <div class="card"><div class="sm">Bugun</div><div class="big" id="day">-</div><div class="sm" id="dayc"></div></div>
+  <div class="card"><div class="sm">Shu oy</div><div class="big" id="month">-</div><div class="sm" id="monthc"></div></div>
+  <div class="card"><div class="sm">Jami</div><div class="big" id="total">-</div><div class="sm" id="comp"></div></div>
+ </div>
+ <div class="card" style="margin-top:10px"><div class="sm">Ishlayotgan qismlar</div><div class="chips" id="parts"></div><div class="sm" id="sess" style="margin-top:8px"></div></div>
+ <div class="row" style="margin:0 0 10px"><button class="big2" id="pw" onclick="power()">…</button></div>
+ <div class="card"><b>Quvvat</b> <span class="sm">oxirgi 5 daqiqa</span><canvas id="c1"></canvas></div>
+ <div class="card"><b>Harorat</b><canvas id="c2"></canvas></div>
+</section>
+
+<section id="p1" hidden>
+ <div class="seg"><button data-v="d" class="sel">Kunlik</button><button data-v="w">Haftalik</button><button data-v="m">Oylik</button><button data-v="s">Seanslar</button><button data-v="g">Grafik</button></div>
+ <div id="sv"></div>
+</section>
+
+<section id="p2" hidden>
+ <div class="card"><b>Boshqaruv</b><div class="sm">Tugmalar nasosning o'z funksiyalaridan olinadi</div><div id="ctl"></div></div>
+</section>
+
+<section id="p3" hidden>
+ <div class="card"><b>Barcha ma'lumotlar (DP)</b><table id="dps"></table></div>
+ <div class="card"><b>Hodisalar</b><table id="evs"></table></div>
+</section>
+
+<section id="p4" hidden>
+ <div class="card">
+  <label>Access ID</label><input id="id" autocomplete="off">
+  <label>Access Secret</label><input id="secret" type="password" autocomplete="off">
+  <label>Device ID</label><input id="device" autocomplete="off">
+  <label>Region</label><select id="region"><option value="eu">eu</option><option value="us">us</option><option value="cn">cn</option><option value="in">in</option></select>
+  <label>Kompressor quvvati (Vt)</label><input id="compressor" inputmode="decimal">
+  <label>Elektr teni quvvati (Vt)</label><input id="heater" inputmode="decimal">
+  <label>Sirkulyatsiya nasosi (Vt)</label><input id="pump" inputmode="decimal">
+  <label>Ventilyator (Vt)</label><input id="fan" inputmode="decimal">
+  <label>Kutish rejimida (Vt)</label><input id="standby" inputmode="decimal">
+  <label>Kalibrlash koeffitsiyenti (1 = o'zgarishsiz)</label><input id="coef" inputmode="decimal">
+  <label>Tarif (so'm/kWh)</label><input id="tariff" inputmode="decimal">
+  <label>Yangilanish oralig'i (soniya)</label><input id="interval" inputmode="numeric">
+  <div class="sm" style="margin-top:6px">1 soniya Tuya bepul limitini tez tugatishi mumkin. Limit xatosi chiqsa, ilova o'zi sekinlashadi; doimiy yechim: 5–10 soniya.</div>
+  <div class="row"><button class="pri big2" onclick="save()">Saqlash</button></div>
+ </div>
+ <div class="card"><b>Fon rejimi</b><div class="sm" style="margin:6px 0">Ilova yopiq bo'lsa ham sarf yig'iladi (bildirishnomadagi "Mango Monitor" o'chmasligi kerak). Telefon uni o'chirib qo'ymasligi uchun batareya cheklovini olib tashlang.</div>
+  <div class="row"><button onclick="Android.openBattery()">Batareya sozlamalari</button></div></div>
+ <div class="card"><b>Ma'lumot</b><div class="row"><button onclick="Android.exportCsv()">CSV eksport</button><button class="red" onclick="ask('Barcha statistika o\'chiriladi. Davom etasizmi?',()=>{Android.resetData();toast('Tozalandi');})">Nolga tushirish</button></div></div>
+</section>
+</main>
+
+<nav>
+ <button class="act" onclick="tab(0)"><span>🏠</span>Asosiy</button>
+ <button onclick="tab(1)"><span>📊</span>Statistika</button>
+ <button onclick="tab(2)"><span>🎛</span>Boshqaruv</button>
+ <button onclick="tab(3)"><span>📋</span>Ma'lumot</button>
+ <button onclick="tab(4)"><span>⚙️</span>Sozlama</button>
+</nav>
+<div id="modal" hidden><div><p id="mt"></p><div class="row"><button class="pri" id="my">Ha</button><button id="mn">Yo'q</button></div></div></div>
+<div id="toast" hidden></div>
+
+<script>
+const $=s=>document.querySelector(s),A=window.Android,P=n=>String(n).padStart(2,'0');
+const F=(x,n=2)=>Number(x||0).toFixed(n);
+const NM={switch:'Nasos',compressor_state:'Kompressor',compressor_strength:'Kompressor %',ele_heating_state:'Elektr teni',pump_state:'Sirkulyatsiya nasosi',draught_fan_state:'Ventilyator',defrost:'Defrost',temp_current:'Joriy harorat',temp_set:'Belgilangan harorat',mode:'Rejim'};
+const FIELDS=['id','secret','device','region','compressor','heater','pump','fan','standby','coef','tariff','interval'];
+let L={},H=null,cur=0,view='d',rng=24,tick0=0;
+
+function tab(n){cur=n;for(let i=0;i<5;i++)$('#p'+i).hidden=i!==n;
+ document.querySelectorAll('nav button').forEach((b,i)=>b.classList.toggle('act',i===n));
+ if(n===1||n===3)loadHist();if(n===2)buildCtl(true);render();}
+function toast(t){const e=$('#toast');e.textContent=t;e.hidden=false;setTimeout(()=>e.hidden=true,3500);}
+function ask(t,f){$('#mt').textContent=t;$('#modal').hidden=false;$('#my').onclick=()=>{$('#modal').hidden=true;f();};$('#mn').onclick=()=>$('#modal').hidden=true;}
+const tf=t=>{const d=new Date(t*1000);return P(d.getHours())+':'+P(d.getMinutes())};
+const df=t=>{const d=new Date(t*1000);return d.getDate()+'.'+P(d.getMonth()+1)+' '+tf(t)};
+const dur=s=>{s=Math.round(s);const h=Math.floor(s/3600),m=Math.floor(s%3600/60);return h?h+' s '+m+' d':m+' d '+(s%60)+' s'};
+const cost=k=>L.tariff>0?Math.round(k*L.tariff).toLocaleString('ru-RU')+" so'm":'';
+
+/* ---------- jonli ---------- */
+async function poll(){try{L=JSON.parse(A.getLive());if(L.msg)toast(L.msg);render();}catch(e){}}
+function render(){
+ const s=L.status||{};
+ const alive=L.updated>0&&Date.now()-L.updated<Math.max(10000,(L.interval||1)*5000);
+ $('#chip').innerHTML=!L.configured?'<span class="mut">sozlanmagan</span>':alive?'<span class="ok">● jonli</span>':'<span class="bad">● aloqa yo\'q</span>';
+ if(cur===0){
+  $('#w').textContent=L.watts??'-';
+  $('#amps').textContent='≈ '+F((L.watts||0)/(Math.sqrt(3)*380*0.9),1)+' A (380 V, 3 faza) • '+(s.switch?'nasos yoniq':'nasos o\'chiq');
+  $('#err').textContent=L.error||'';
+  $('#t').textContent=(s.temp_current??'-')+'°';$('#ts').textContent=(s.temp_set??'-')+'°';
+  $('#day').textContent=F(L.day)+' kWh';$('#dayc').textContent=cost(L.day);
+  $('#month').textContent=F(L.month)+' kWh';
+  const d=new Date(),dim=new Date(d.getFullYear(),d.getMonth()+1,0).getDate(),fc=L.month/d.getDate()*dim;
+  $('#monthc').textContent=(cost(L.month)||'')+' • oy oxiri ≈ '+F(fc,0)+' kWh';
+  $('#total').textContent=F(L.total)+' kWh';$('#comp').textContent='bugun kompressor '+F(L.comp/60,1)+' soat';
+  const parts=[];['compressor_state','ele_heating_state','pump_state','draught_fan_state','defrost'].forEach(k=>{if(s[k])parts.push(NM[k]+(k==='compressor_state'?' '+(s.compressor_strength||0)+'%':''))});
+  $('#parts').innerHTML=parts.length?parts.map(p=>'<span class="tag on">'+p+'</span>').join(''):'<span class="sm">hech biri</span>';
+  $('#sess').textContent=L.sessOn?'Joriy seans: '+dur(Date.now()/1000-L.sessStart)+' • '+F(L.sessKwh)+' kWh':'';
+  $('#pw').textContent=s.switch?'⏻ Nasosni o\'chirish':'⏻ Nasosni yoqish';$('#pw').className='big2 '+(s.switch?'red':'pri');
+  const lv=L.live||[];chart('c1',lv.map(p=>[p[0],p[1]]),'#38bdf8',true,' Vt');chart('c2',lv.map(p=>[p[0],p[2]]),'#fb923c',false,'°');
+ }
+ if(cur===3){
+  const ks=Object.keys(s).sort();
+  $('#dps').innerHTML='<tr><th>Nomi</th><th>Kod</th><th>Qiymat</th></tr>'+ks.map(k=>'<tr><td>'+(NM[k]||'')+'</td><td>'+k+'</td><td>'+(s[k]===true?'<span class="ok">ha</span>':s[k]===false?'<span class="mut">yo\'q</span>':s[k])+'</td></tr>').join('');
+ }
+}
+function power(){const on=!!(L.status||{}).switch;ask(on?'Nasosni O\'CHIRASIZMI?':'Nasosni yoqasizmi?',()=>A.sendCommand('switch',String(!on)));}
+
+/* ---------- boshqaruv (nasosning o'z funksiyalaridan) ---------- */
+let ctlSig='';
+function buildCtl(force){
+ const sp=L.specs||{},fn=(sp.functions||[]).slice();
+ if(!fn.length){fn.push({code:'switch',name:'Nasos',type:'Boolean'},{code:'temp_set',name:'Belgilangan harorat',type:'Integer',values:'{"min":10,"max":75,"scale":0,"step":1}'});}
+ const sig=JSON.stringify(fn)+JSON.stringify(L.status||{});
+ if(!force&&sig===ctlSig)return;ctlSig=sig;
+ const s=L.status||{};let h='';
+ fn.forEach(f=>{let v={};try{v=JSON.parse(f.values||'{}')}catch(e){}
+  const cur=s[f.code],name=f.name||NM[f.code]||f.code;
+  h+='<div style="margin-top:14px"><b>'+name+'</b> <span class="sm">('+f.code+')</span><div class="row">';
+  if(f.type==='Boolean'){h+='<button class="'+(cur?'sel':'')+'" onclick="cmd(\''+f.code+'\',true)">Yoqish</button><button class="'+(cur===false?'sel':'')+'" onclick="cmd(\''+f.code+'\',false)">O\'chirish</button>';}
+  else if(f.type==='Enum'){(v.range||[]).forEach(r=>{h+='<button class="'+(cur===r?'sel':'')+'" onclick="cmd(\''+f.code+'\',\''+r+'\')">'+r+'</button>';});}
+  else if(f.type==='Integer'){const sc=Math.pow(10,v.scale||0),st=v.step||1;
+   h+='<button onclick="step(\''+f.code+'\','+(-st)+','+(v.min??0)+','+(v.max??100)+')">−</button><b id="v_'+f.code+'">'+(cur===undefined?'-':cur/sc)+'</b><button onclick="step(\''+f.code+'\','+st+','+(v.min??0)+','+(v.max??100)+')">+</button><span class="sm">'+(v.min!==undefined?v.min/sc+' … '+v.max/sc:'')+(v.unit?' '+v.unit:'')+'</span>';}
+  else h+='<span class="sm">qo\'llab-quvvatlanmaydi ('+f.type+')</span>';
+  h+='</div></div>';});
+ $('#ctl').innerHTML=h;
+}
+function cmd(code,val){const name=NM[code]||code;ask(name+' → '+val+' buyrug\'i yuborilsinmi?',()=>A.sendCommand(code,JSON.stringify(val)));}
+function step(code,d,mn,mx){const c=Number((L.status||{})[code]||0),n=Math.max(mn,Math.min(mx,c+d));if(n===c)return;ask((NM[code]||code)+' → '+n+' qilinsinmi?',()=>A.sendCommand(code,String(n)));}
+
+/* ---------- statistika ---------- */
+async function loadHist(){try{H=JSON.parse(A.getHistory(view==='g'?rng:1));renderStats();renderEvents();}catch(e){}}
+function agg(keyf,n){const m={};(H.days||[]).forEach(d=>{const k=keyf(d[0]);m[k]=m[k]||[k,0,0,0];m[k][1]+=d[1];m[k][2]+=d[2];m[k][3]++;});
+ return Object.values(m).sort((a,b)=>a[0]<b[0]?-1:1).slice(-n);}
+const wk=ds=>{const [y,m,d]=ds.split('-').map(Number),x=new Date(y,m-1,d);x.setDate(x.getDate()-(x.getDay()+6)%7);return x.getFullYear()+'-'+P(x.getMonth()+1)+'-'+P(x.getDate())};
+function renderStats(){
+ if(!H||cur!==1)return;
+ const box=$('#sv');
+ if(view==='s'){
+  const ss=(H.sessions||[]).slice().reverse();let h='<div class="card"><b>Kompressor seanslari</b>';
+  if(L.sessOn)h+='<div class="sm" style="margin:6px 0">Hozir ishlayapti: '+dur(Date.now()/1000-L.sessStart)+' • '+F(L.sessKwh)+' kWh</div>';
+  h+='<table><tr><th>Boshlandi</th><th>Davomi</th><th>kWh</th><th>°C</th><th>maks %</th></tr>';
+  ss.slice(0,40).forEach(x=>{h+='<tr><td>'+df(x[0])+'</td><td>'+dur(x[1]-x[0])+'</td><td>'+F(x[2])+'</td><td>'+Math.round(x[3])+'→'+Math.round(x[4])+'</td><td>'+Math.round(x[5])+'</td></tr>';});
+  box.innerHTML=h+'</table>'+(ss.length?'':'<div class="sm">Hali seans yo\'q</div>')+'</div>';return;}
+ if(view==='g'){
+  box.innerHTML='<div class="seg"><button onclick="rng=6;loadHist()" class="'+(rng===6?'sel':'')+'">6 soat</button><button onclick="rng=24;loadHist()" class="'+(rng===24?'sel':'')+'">24 soat</button><button onclick="rng=168;loadHist()" class="'+(rng===168?'sel':'')+'">7 kun</button></div><div class="card"><b>Quvvat (o\'rtacha/min)</b><canvas id="g1"></canvas></div><div class="card"><b>Harorat</b><canvas id="g2"></canvas></div>';
+  const m=H.mins||[];chart('g1',m.map(p=>[p[0],p[1]]),'#38bdf8',true,' Vt',rng>24);chart('g2',m.map(p=>[p[0],p[2]]),'#fb923c',false,'°',rng>24);return;}
+ let rows,title,lab;
+ if(view==='d'){rows=agg(k=>k,30);title='Oxirgi 30 kun';lab=k=>k.slice(8)+'.'+k.slice(5,7);}
+ else if(view==='w'){rows=agg(wk,12);title='Oxirgi 12 hafta';lab=k=>k.slice(8)+'.'+k.slice(5,7);}
+ else{rows=agg(k=>k.slice(0,7),12);title='Oxirgi 12 oy';lab=k=>k.slice(5,7)+'.'+k.slice(2,4);}
+ const tot=rows.reduce((a,r)=>a+r[1],0),hrs=rows.reduce((a,r)=>a+r[2],0)/60,nd=rows.reduce((a,r)=>a+r[3],0)||1;
+ let h='<div class="grid"><div class="card"><div class="sm">Jami</div><div class="big">'+F(tot,1)+' kWh</div><div class="sm">'+cost(tot)+'</div></div><div class="card"><div class="sm">Kuniga o\'rtacha</div><div class="big">'+F(tot/nd,1)+' kWh</div><div class="sm">kompressor '+F(hrs,1)+' soat</div></div></div>';
+ h+='<div class="card" style="margin-top:10px"><b>'+title+'</b><canvas id="b1"></canvas></div><div class="card"><table><tr><th>Davr</th><th>kWh</th><th>Soat</th><th>Narx</th></tr>';
+ rows.slice().reverse().forEach(r=>{h+='<tr><td>'+lab(r[0])+'</td><td>'+F(r[1])+'</td><td>'+F(r[2]/60,1)+'</td><td>'+cost(r[1])+'</td></tr>';});
+ box.innerHTML=h+'</table></div>';
+ bars('b1',rows.map(r=>[lab(r[0]),r[1]]));
+}
+function renderEvents(){if(cur!==3||!H)return;
+ $('#evs').innerHTML='<tr><th>Vaqt</th><th>Hodisa</th></tr>'+(H.events||[]).slice().reverse().slice(0,60).map(e=>'<tr><td>'+df(e[0])+'</td><td style="text-align:left">'+e[1]+'</td></tr>').join('');}
+document.querySelectorAll('.seg button[data-v]').forEach(b=>b.onclick=()=>{view=b.dataset.v;document.querySelectorAll('.seg button[data-v]').forEach(x=>x.classList.toggle('sel',x===b));loadHist();});
+
+/* ---------- grafiklar ---------- */
+function setup(id){const c=$('#'+id);if(!c||!c.clientWidth)return null;const r=window.devicePixelRatio||1,w=c.clientWidth,h=c.clientHeight;c.width=w*r;c.height=h*r;const x=c.getContext('2d');x.scale(r,r);x.font='11px system-ui';x.fillStyle='#64748b';return{x,w,h};}
+function chart(id,pts,col,zero,u,long){const g=setup(id);if(!g)return;const{x,w,h}=g;
+ if(pts.length<2){x.fillText("Ma'lumot yig'ilmoqda…",8,20);return;}
+ let mn=Math.min(...pts.map(p=>p[1])),mx=Math.max(...pts.map(p=>p[1]));if(zero)mn=0;if(mx-mn<1)mx=mn+1;
+ const pl=44,pr=6,pt=8,pb=18,t0=pts[0][0],t1=pts[pts.length-1][0];
+ const X=t=>pl+(t-t0)/Math.max(1,t1-t0)*(w-pl-pr),Y=v=>pt+(1-(v-mn)/(mx-mn))*(h-pt-pb);
+ x.strokeStyle='#1e293b';x.lineWidth=1;
+ for(let i=0;i<=3;i++){const v=mn+(mx-mn)*i/3,y=Y(v);x.beginPath();x.moveTo(pl,y);x.lineTo(w-pr,y);x.stroke();x.fillText(Math.round(v)+u,2,y+4);}
+ x.beginPath();pts.forEach((p,i)=>i?x.lineTo(X(p[0]),Y(p[1])):x.moveTo(X(p[0]),Y(p[1])));
+ x.strokeStyle=col;x.lineWidth=2;x.stroke();x.lineTo(X(t1),Y(mn));x.lineTo(X(t0),Y(mn));x.closePath();x.globalAlpha=.15;x.fillStyle=col;x.fill();x.globalAlpha=1;
+ x.fillStyle='#64748b';const a=long?df(t0):tf(t0),b=long?df(t1):tf(t1);x.fillText(a,pl,h-4);x.fillText(b,w-pr-x.measureText(b).width,h-4);}
+function bars(id,items){const g=setup(id);if(!g)return;const{x,w,h}=g;
+ if(!items.length){x.fillText("Ma'lumot yig'ilmoqda…",8,20);return;}
+ const mx=Math.max(0.1,...items.map(i=>i[1])),pl=36,pb=18,pt=8,n=items.length,bw=(w-pl-6)/n;
+ x.fillText(F(mx,1),2,pt+8);x.fillText('0',2,h-pb);
+ items.forEach((it,i)=>{const bh=it[1]/mx*(h-pt-pb),x0=pl+i*bw;x.fillStyle='#38bdf8';x.fillRect(x0+1,h-pb-bh,Math.max(1,bw-2),bh);
+  if(n<=8||i%Math.ceil(n/6)===0){x.fillStyle='#64748b';x.fillText(it[0],x0,h-4);}});}
+
+/* ---------- sozlamalar ---------- */
+function save(){const o={};FIELDS.forEach(k=>o[k]=$('#'+k).value);A.saveConfig(JSON.stringify(o));toast('Saqlandi');tab(0);}
+try{const c=JSON.parse(A.getConfig());FIELDS.forEach(k=>{$('#'+k).value=c[k]||'';});}catch(e){}
+poll().then(()=>{if(!L.configured)tab(4);});
+setInterval(poll,1000);
+setInterval(()=>{if(cur===1||cur===3)loadHist();if(cur===2)buildCtl(false);},5000);
+</script></body></html>
